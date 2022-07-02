@@ -43,6 +43,8 @@ static int cmd_si(char *args);
 
 static int cmd_info(char *args);
 
+static int cmd_x(char *args);
+
 static struct {
   const char *name;
   const char *description;
@@ -53,7 +55,8 @@ static struct {
   { "q", "Exit NEMU", cmd_q },
   /* TODO: Add more commands */
   { "si", "Program pauses after executing N instructions, default [N] is 1", cmd_si},
-  { "info", "Print status of registers and information about watchpoint", cmd_info}
+  { "info", "Print status of registers and information about watchpoint", cmd_info},
+  { "x", "scan mem at posi of EXPR, output subsequent N four-bytes in form of hex", cmd_x}
 
 };
 
@@ -97,6 +100,16 @@ static int cmd_si(char *args){
 }
 
 static int cmd_info(char *args){
+  char *arg = strtok(NULL, " ");
+  if ( arg==NULL || strcmp(arg, "r" )==0){
+  isa_reg_display(); 
+  } else {
+    printf("invalid argument");
+  }
+  return 0;
+}
+
+static int cmd_x(char *args){
   return 0;
 }
 
