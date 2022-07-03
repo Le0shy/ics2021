@@ -11,7 +11,8 @@ const char *regs[] = {
 void isa_reg_display() {
   int regs_num = ARRLEN(regs);
   for(int i=0; i<regs_num; i++){
-    printf("\e[1;36m%3s:\e[0m %#12x | ",regs[i], cpu.gpr[i]._32);
+    //use a macro?
+    printf(" %-3s  "FMT_WORD " \n",regs[i], cpu.gpr[i]._32);
   }
   //printf("pc  %FMT_PADDR", cpu.pc);
  }
