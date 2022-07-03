@@ -2,6 +2,7 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <memory/vaddr.h>
 #include "sdb.h"
 
 static int is_batch_mode = false;
@@ -45,6 +46,8 @@ static int cmd_info(char *args);
 
 static int cmd_x(char *args);
 
+static int print_mem (int words, vaddr_t address);
+
 static struct {
   const char *name;
   const char *description;
@@ -56,7 +59,8 @@ static struct {
   /* TODO: Add more commands */
   { "si", "Program pauses after executing N instructions, default [N] is 1", cmd_si},
   { "info", "Print status of registers and information about watchpoint", cmd_info},
-  { "x", "scan mem at posi of EXPR, output subsequent N four-bytes in form of hex", cmd_x}
+  { "x", "scan mem at posi of EXPR, output subsequent N four-bytes in form of hex\
+    command format:x N EXPR", cmd_x}
 
 };
 
@@ -104,12 +108,40 @@ static int cmd_info(char *args){
   if ( arg==NULL || strcmp(arg, "r" )==0){
   isa_reg_display(); 
   } else {
-    printf("invalid argument");
+    printf("invalid argument \n");
   }
   return 0;
 }
 
 static int cmd_x(char *args){
+  if (args == NULL){
+    printf("%s - %s\n", cmd_table[5].name, cmd_table[5].description);
+    return 0;
+  }
+  int mem_words;
+  vaddr_t address;
+
+  char *arg = strtok(args, " ");
+  sscanf(arg, "%d", &mem_words);
+  arg = strtok(NULL, " ");
+  if (arg == NULL){
+    printf("specify the expr/addr need to be scanned\n");
+    return 0;
+  }
+  sscanf(arg, FMT_PADDR, &address);
+  
+  print_mem(mem_words, address);
+
+  return 0;
+}
+
+int print_mem(int words, vaddr_t address){
+  vaddr_t word_len = sizeof(word_t);
+  vaddr_t offset = 0;
+  for(int i = 0; i<words ; i +=1 ){
+    offset = word_len*i;
+    printf(FMT_PADDR": "FMT_WORD"\n", address+offset, vaddr_read(address+offset,word_len));
+  }
   return 0;
 }
 
