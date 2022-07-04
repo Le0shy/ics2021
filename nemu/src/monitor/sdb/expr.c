@@ -4,12 +4,20 @@
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <regex.h>
+#include <string.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ,
-
+  TK_NOTYPE = 256, 
+  TK_EQ,
   /* TODO: Add more token types */
-
+  TK_PLU,    //plus "+"
+  TK_MIN,    //minus "-"
+  TK_MUL,    //multiply "*"
+  TK_DIV,    //divide "/"
+  TK_RPR,    //right parenthesis "("
+  TK_LPR,    //left parenthesis ")"
+  //TK_DBL_QUO,//double quotation mark """
+  TK_DEC_DIG //decimal digits "[0-9]+"
 };
 
 static struct rule {
@@ -21,9 +29,15 @@ static struct rule {
    * Pay attention to the precedence level of different rules.
    */
 
-  {" +", TK_NOTYPE},    // spaces
-  {"\\+", '+'},         // plus
+  {"( +|\")", TK_NOTYPE},    // spaces 
+  {"\\+", TK_PLU},       // plus
   {"==", TK_EQ},        // equal
+  {"\\-", TK_MIN},       // minus
+  {"\\*", TK_MUL},       // multiply
+  {"\\/", TK_DIV},       // divide
+  {"\\(", TK_RPR},       // right parenthesis
+  {"\\)", TK_LPR},       // left parenthesis
+  {"[0-9]+", TK_DEC_DIG}// decimal digits
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -80,7 +94,15 @@ static bool make_token(char *e) {
          */
 
         switch (rules[i].token_type) {
-          default: TODO();
+          //default: TODO();
+            assert(substr_len<=32);
+          case TK_DEC_DIG:
+            tokens[nr_token].type = TK_DEC_DIG;
+            memcpy(tokens[nr_token++].str, substr_start, substr_len);
+            printf("%d", nr_token);
+            break;
+          default: 
+            tokens[nr_token++].type = rules[i].token_type;
         }
 
         break;
@@ -100,11 +122,12 @@ static bool make_token(char *e) {
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
     *success = false;
+    printf("false\n");
     return 0;
   }
 
   /* TODO: Insert codes to evaluate the expression. */
-  TODO();
-
+  //TODO();
+  printf("success\n");
   return 0;
 }

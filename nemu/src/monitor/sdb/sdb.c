@@ -48,6 +48,8 @@ static int cmd_x(char *args);
 
 static int print_mem (int words, vaddr_t address);
 
+static int cmd_p(char *args);
+
 static struct {
   const char *name;
   const char *description;
@@ -60,7 +62,8 @@ static struct {
   { "si", "Program pauses after executing N instructions, default [N] is 1", cmd_si},
   { "info", "Print status of registers and information about watchpoint", cmd_info},
   { "x", "scan mem at posi of EXPR, output subsequent N four-bytes in form of hex\
-    command format:x N EXPR", cmd_x}
+    command format:x N EXPR", cmd_x},
+  { "p", "evaluates the EXPR and prints out value, command format: p EXPR", cmd_p}
 
 };
 
@@ -120,7 +123,7 @@ static int cmd_x(char *args){
   }
   int mem_words;
   vaddr_t address;
-
+  printf("%s\n", args);
   char *arg = strtok(args, " ");
   sscanf(arg, "%d", &mem_words);
   arg = strtok(NULL, " ");
@@ -142,6 +145,19 @@ int print_mem(int words, vaddr_t address){
     offset = word_len*i;
     printf(FMT_PADDR": "FMT_WORD"\n", address+offset, vaddr_read(address+offset,word_len));
   }
+  return 0;
+}
+
+int cmd_p(char *args){
+  printf("%s\n", args);
+  char *arg = strtok(NULL, "");
+  if (arg == NULL){
+    printf("%s - %s\n", cmd_table[6].name, cmd_table[6].description);
+    return 0;
+  }
+  printf("%s\n", arg);
+  bool success = true;
+  expr (arg, &success);
   return 0;
 }
 
