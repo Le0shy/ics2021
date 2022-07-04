@@ -101,6 +101,8 @@ static bool make_token(char *e) {
             memcpy(tokens[nr_token++].str, substr_start, substr_len);
             printf("%d", nr_token);
             break;
+          case TK_NOTYPE:
+            break;
           default: 
             tokens[nr_token++].type = rules[i].token_type;
         }
@@ -114,7 +116,7 @@ static bool make_token(char *e) {
       return false;
     }
   }
-
+  printf("%d\n", nr_token);
   return true;
 }
 
