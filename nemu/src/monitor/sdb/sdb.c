@@ -157,7 +157,8 @@ int cmd_p(char *args){
   }
   printf("%s\n", arg);
   bool success = true;
-  expr (arg, &success);
+  word_t result = expr (arg, &success);
+  printf("%d\n", result);
   return 0;
 }
 

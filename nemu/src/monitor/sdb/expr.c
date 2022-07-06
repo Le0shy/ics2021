@@ -14,8 +14,8 @@ enum {
   TK_MIN,    //minus "-"
   TK_MUL,    //multiply "*"
   TK_DIV,    //divide "/"
-  TK_RPR,    //right parenthesis "("
-  TK_LPR,    //left parenthesis ")"
+  TK_LPR,    //left parenthesis "("
+  TK_RPR,    //right parenthesis ")"
   //TK_DBL_QUO,//double quotation mark """
   TK_DEC_DIG //decimal digits "[0-9]+"
 };
@@ -35,8 +35,8 @@ static struct rule {
   {"\\-", TK_MIN},       // minus
   {"\\*", TK_MUL},       // multiply
   {"\\/", TK_DIV},       // divide
-  {"\\(", TK_RPR},       // right parenthesis
-  {"\\)", TK_LPR},       // left parenthesis
+  {"\\(", TK_LPR},       // right parenthesis
+  {"\\)", TK_RPR},       // left parenthesis
   {"[0-9]+", TK_DEC_DIG}// decimal digits
 };
 
@@ -68,6 +68,7 @@ typedef struct token {
 
 static Token tokens[32] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
+
 
 static bool make_token(char *e) {
   int position = 0;
@@ -106,7 +107,6 @@ static bool make_token(char *e) {
           default: 
             tokens[nr_token++].type = rules[i].token_type;
         }
-
         break;
       }
     }
@@ -116,20 +116,143 @@ static bool make_token(char *e) {
       return false;
     }
   }
-  printf("%d\n", nr_token);
+  // printf("%d\n", nr_token);
   return true;
 }
 
+static word_t power_ten(int power){
+  if (power == 0) return 1;
+  return 10*power_ten(power - 1);
+}
+
+static word_t str2word_t(char * str){
+  int len = strlen(str);
+  word_t res = 0;
+  for(int i = 0; i<len ; i += 1){
+    assert(str[i]>= '0' && str[i] <= '9');
+    res += (word_t)(str[i] - '0')*power_ten(len - i -1);
+  }
+  return res;
+}
+
+typedef struct {
+    int array [10];
+    int size;
+}s_stack;
+
+/* pop an element if stack is empty return NULL */
+static int pop(s_stack* stack){
+  stack->size -= 1;
+  if (stack->size < 0) return 0;
+  int val = stack->array[stack->size];
+  return val;
+}
+
+/* push an element, assert if size > length of inner array */
+static int push(s_stack* stack, int val){
+  assert(stack->size < 10);
+  stack->array[stack->size] = val;
+  stack->size += 1;
+  return val;
+}
+
+static bool check_parenthesis(int start_pos, int end_pos){
+  bool flag;
+  int substr_len = end_pos - start_pos + 1;
+  s_stack stack= {
+    {0,0,0,0,0,0,0,0,0,0},
+    0
+  };
+
+  switch(tokens[start_pos].type){
+    case TK_LPR: 
+      push(&stack, TK_LPR);
+      flag = true; 
+      break;
+    case TK_RPR:
+      assert(0);
+      break;
+    default:
+      flag = false;
+  }
+  for (int i = start_pos + 1; i < substr_len; i += 1){
+    if (tokens[i].type == TK_LPR){
+      push(&stack, TK_LPR); 
+    } else {
+      if (tokens[i].type == TK_RPR){
+        assert(pop(&stack) != 0);
+        if (stack.size == 0 && i != substr_len - 1){
+          flag = false;
+        }
+      }
+    }
+  }
+  return flag;
+}
+
+static int main_operator_posi (int start_pos, int end_pos, int* op_type){
+  int present_op_type = 0, present_op = 0;
+  while (start_pos <= end_pos){
+    if (tokens[start_pos++].type == TK_LPR){
+      for(; tokens[start_pos++].type != TK_RPR; );
+    }
+    else if (tokens[start_pos].type < TK_LPR){
+      if (present_op_type == 0){
+        present_op = start_pos;
+        present_op_type = tokens[start_pos].type;
+      } else {
+          if (present_op_type < TK_MUL && tokens[start_pos].type >= TK_MUL){
+
+          } else {
+            present_op = start_pos;
+            present_op_type = tokens[start_pos].type;
+          }
+        }
+      start_pos += 1;
+    } else {
+      start_pos += 1;
+    }
+  }
+  * op_type = present_op_type;
+  return present_op;
+}
+
+static word_t evaluate(int start_pos, int end_pos){
+  assert (start_pos <= end_pos);
+
+  /* op: position of main operator, 
+     op_type: type of operator */
+  int op, op_type;
+
+  if (start_pos == end_pos) return str2word_t(tokens[start_pos].str);
+  else if (check_parenthesis(start_pos, end_pos) == true){
+    return evaluate(start_pos + 1, end_pos - 1);
+  }
+  else {
+    op = main_operator_posi (start_pos, end_pos, &op_type);
+    word_t val1 = evaluate (start_pos, op-1);
+    word_t val2 = evaluate (op+1, end_pos);
+
+    switch(op_type){
+      case TK_PLU: return val1 + val2;
+      case TK_MIN: return val1 - val2;
+      case TK_MUL: return val1 * val2;
+      case TK_DIV: return val1 / val2;
+      default: assert(0);
+    }
+  }
+}
 
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
     *success = false;
-    printf("false\n");
+    printf("false to lexical analysis\n");
     return 0;
   }
 
   /* TODO: Insert codes to evaluate the expression. */
   //TODO();
   printf("success\n");
-  return 0;
+  
+  return evaluate(0, nr_token - 1);
 }
