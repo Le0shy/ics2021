@@ -124,7 +124,7 @@ static word_t power_ten(int power){
   if (power == 0) return 1;
   return 10*power_ten(power - 1);
 }
-
+/* strtol() could be used here */
 static word_t str2word_t(char * str){
   int len = strlen(str);
   word_t res = 0;
