@@ -41,7 +41,7 @@ static struct rule {
 };
 
 #define NR_REGEX ARRLEN(rules)
-
+#define STACK_CAP 64
 static regex_t re[NR_REGEX] = {};
 
 /* Rules are used for many times.
@@ -66,7 +66,7 @@ typedef struct token {
   char str[32];
 } Token;
 
-static Token tokens[32] __attribute__((used)) = {};
+static Token tokens[1024] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
 
@@ -136,7 +136,7 @@ static word_t str2word_t(char * str){
 }
 
 typedef struct {
-    int array [10];
+    int array [STACK_CAP];
     int size;
 }s_stack;
 
@@ -150,7 +150,7 @@ static int pop(s_stack* stack){
 
 /* push an element, assert if size > length of inner array */
 static int push(s_stack* stack, int val){
-  assert(stack->size < 10);
+  assert(stack->size < STACK_CAP);
   stack->array[stack->size] = val;
   stack->size += 1;
   return val;
@@ -158,9 +158,9 @@ static int push(s_stack* stack, int val){
 
 static bool check_parenthesis(int start_pos, int end_pos){
   bool flag;
-  int substr_len = end_pos - start_pos + 1;
+  // int substr_len = end_pos - start_pos + 1;
   s_stack stack= {
-    {0,0,0,0,0,0,0,0,0,0},
+    { 0 },
     0
   };
 
@@ -175,13 +175,13 @@ static bool check_parenthesis(int start_pos, int end_pos){
     default:
       flag = false;
   }
-  for (int i = start_pos + 1; i < substr_len; i += 1){
+  for (int i = start_pos + 1; i <= end_pos; i += 1){
     if (tokens[i].type == TK_LPR){
       push(&stack, TK_LPR); 
     } else {
       if (tokens[i].type == TK_RPR){
         assert(pop(&stack) != 0);
-        if (stack.size == 0 && i != substr_len - 1){
+        if (stack.size == 0 && i != end_pos){
           flag = false;
         }
       }
@@ -192,9 +192,23 @@ static bool check_parenthesis(int start_pos, int end_pos){
 
 static int main_operator_posi (int start_pos, int end_pos, int* op_type){
   int present_op_type = 0, present_op = 0;
+  s_stack stack = {
+    { 0 },
+    0
+  };
+
   while (start_pos <= end_pos){
-    if (tokens[start_pos++].type == TK_LPR){
-      for(; tokens[start_pos++].type != TK_RPR; );
+    if (tokens[start_pos].type == TK_LPR){
+      push(&stack, TK_LPR);
+      for(start_pos +=1 ; stack.size != 0; start_pos +=1){
+        if (tokens[start_pos].type == TK_LPR){
+          push(&stack, TK_LPR);
+        } else {
+          if (tokens[start_pos].type == TK_RPR){
+            pop(&stack);
+          }
+        }
+      }
     }
     else if (tokens[start_pos].type < TK_LPR){
       if (present_op_type == 0){
