@@ -66,9 +66,18 @@ typedef struct token {
   char str[32];
 } Token;
 
+
 static Token tokens[1024] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
+/* clear tokens after using one time */
+static void clear_tokens (){
+  for (int i = 0; i < nr_token; i += 1){
+    tokens[i].type = 0;
+    memset(tokens[i].str, 0, 32);
+  }
+  nr_token = 0;
+}
 
 static bool make_token(char *e) {
   int position = 0;
@@ -258,12 +267,12 @@ static word_t evaluate(int start_pos, int end_pos){
 }
 
 word_t expr(char *e, bool *success) {
+  clear_tokens();
   if (!make_token(e)) {
     *success = false;
     printf("false to lexical analysis\n");
     return 0;
   }
-
   /* TODO: Insert codes to evaluate the expression. */
   //TODO();
   printf("success\n");

@@ -6,8 +6,12 @@
 #include <string.h>
 
 #define BUFF_SIZE 65536
+enum  { 
+  BLANK, OPERATOR, LEFT_PARENTHESIS, RIGHT_PARENTHESIS
+}; 
 // this should be enough
-static char buf[BUFF_SIZE];
+static char buf[BUFF_SIZE] = {};
+static char input_buf[BUFF_SIZE] = {};
 static char code_buf[65536 + 128] = {}; // a little larger than `buf`
 static char *code_format =
 "#include <stdio.h>\n"
@@ -16,6 +20,10 @@ static char *code_format =
 "  printf(\"%%u\", result); "
 "  return 0; "
 "}";
+
+static char* gen_blank(){
+  return (rand()%2)?" ":"";
+}
 
 static char* gen_rand_op(){
   switch(rand()%4){
@@ -28,17 +36,29 @@ static char* gen_rand_op(){
 }
 
 static char* gen_num (char *num_str){
-  snprintf(num_str, 5, "%u", rand() % 2048);
+  snprintf(num_str, 5, "%uu", rand() % 2048);
   return num_str;
 }
 
 static char* generator(int options){
   switch(options){
-    case 1: return gen_rand_op(); 
-    case 2: return "("; 
-    case 3: return ")"; 
+    case BLANK: return gen_blank();
+    case OPERATOR: return gen_rand_op();
+    case LEFT_PARENTHESIS: return "(";
+    case RIGHT_PARENTHESIS: return ")"; 
     default: assert(0);
   }
+}
+
+/* take out 'u' behind every digits to put in test file */
+static void input_form (){
+  int input_size = 0;
+  for(int i = 0; i < strlen(buf); i+= 1){
+    if (buf[i] != 'u'){
+      input_buf[input_size++] = buf[i];
+    }
+  }
+  input_buf[input_size] = '\0';
 }
 
 /* harder than expected... */
@@ -57,8 +77,9 @@ static char *gen_rand_expr(char *upper_buf) {
       char *temp1;
       temp1 = (char *)malloc(BUFF_SIZE);
       temp1[0] = '\0';
-      snprintf(upper_buf, BUFF_SIZE - strlen(upper_buf), "%s%s%s", 
-        generator(2), gen_rand_expr(temp1), generator(3));
+      snprintf(upper_buf, BUFF_SIZE - strlen(upper_buf), "%s%s%s%s%s", 
+        generator(LEFT_PARENTHESIS), generator(BLANK), gen_rand_expr(temp1), 
+        generator(BLANK), generator(RIGHT_PARENTHESIS));
       free(temp1);
       break;
     }
@@ -67,8 +88,9 @@ static char *gen_rand_expr(char *upper_buf) {
       temp1[0] = '\0';
       char *temp2 = (char* )malloc(BUFF_SIZE);
       temp2[0] = '\0';
-      snprintf(upper_buf, BUFF_SIZE - strlen(upper_buf), "%s%s%s", 
-        gen_rand_expr(temp1), generator(1), gen_rand_expr(temp2));
+      snprintf(upper_buf, BUFF_SIZE - strlen(upper_buf), "%s%s%s%s%s", 
+        gen_rand_expr(temp1), generator(BLANK), generator(OPERATOR),
+        generator(BLANK), gen_rand_expr(temp2));
       free(temp1);
       free(temp2);
       break;
@@ -97,16 +119,19 @@ int main(int argc, char *argv[]) {
     fclose(fp);
 
     int ret = system("gcc /tmp/.code.c -o /tmp/.expr -Wall -Werror");
-    if (ret != 0) continue;
-
+    if (ret != 0) {
+      i -= 1;
+      continue;
+    }
     fp = popen("/tmp/.expr", "r");
     assert(fp != NULL);
 
     int result;
+    input_form(); 
     fscanf(fp, "%d", &result);
     pclose(fp);
 
-    printf("%u %s\n", result, buf);
+    printf("%u %s\n", result, input_buf);
   }
   return 0;
 }

@@ -149,7 +149,7 @@ int print_mem(int words, vaddr_t address){
 }
 
 int cmd_p(char *args){
-  printf("%s\n", args);
+  //printf("%s\n", args);
   char *arg = strtok(NULL, "");
   if (arg == NULL){
     printf("%s - %s\n", cmd_table[6].name, cmd_table[6].description);
