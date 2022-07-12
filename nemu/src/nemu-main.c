@@ -31,6 +31,8 @@ void test_cmd_p(){
   int test_num = 0;
   int counter = 0;
   int failed_num [100];
+  unsigned int failed_result[100];
+  unsigned int failed_ans[100];
   int failed_counter = 0;
 
   char buffer[65535];
@@ -53,6 +55,8 @@ void test_cmd_p(){
     if(result == ans){
       printf("passed %d\n",++counter);
     } else {
+      failed_result[failed_counter] = result;
+      failed_ans[failed_counter] = ans;
       failed_num[failed_counter++] = test_num;
     }
     input = fgets(buffer, ARRLEN(buffer), fp);
@@ -61,6 +65,7 @@ void test_cmd_p(){
   Log("pass%d tests", counter);
   printf("failed tests:\n");
   for(int i =0; i< failed_counter; i += 1){
-    printf("%d\n", failed_num[i]);
+    printf("[%d] answer:%u result:%u\n", failed_num[i],
+    failed_ans[i], failed_result[i]);
   }
 }

@@ -5,7 +5,6 @@
  */
 #include <regex.h>
 #include <string.h>
-
 enum {
   TK_NOTYPE = 256, 
   TK_EQ,
@@ -41,7 +40,9 @@ static struct rule {
 };
 
 #define NR_REGEX ARRLEN(rules)
-#define STACK_CAP 64
+#define STACK_CAP 256
+#define TOKENS_SIZE 4096
+
 static regex_t re[NR_REGEX] = {};
 
 /* Rules are used for many times.
@@ -67,7 +68,7 @@ typedef struct token {
 } Token;
 
 
-static Token tokens[1024] __attribute__((used)) = {};
+static Token tokens[TOKENS_SIZE] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
 /* clear tokens after using one time */
