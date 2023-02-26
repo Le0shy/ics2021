@@ -39,7 +39,7 @@ static struct rule {
   {"\\+", TK_PLU},       // plus
   {"==", TK_EQ},        // equal
   {"\\-", TK_MIN},       // minus
-  {"\\*", TK_MUL},       // multiply
+  {"\\*", TK_MUL},       // multiply (dereference)
   {"\\/", TK_DIV},       // divide
   {"\\(", TK_LPR},       // right parenthesis
   {"\\)", TK_RPR},       // left parenthesis
@@ -308,6 +308,11 @@ word_t expr(char *e, bool *success) {
   }
   /* TODO: Insert codes to evaluate the expression. */
   //TODO();
+  for (int i = 0; i < nr_token ; i += 1){
+    if (tokens[i].type == TK_MUL && (i == 0 || tokens[i-1].type < TK_RPR)){
+      tokens[i].type = TK_DEREF;
+    }
+  }
   printf("success\n");
   
   return evaluate(0, nr_token - 1);
