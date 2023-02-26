@@ -117,10 +117,13 @@ static bool make_token(char *e) {
           //default: TODO();
             assert(substr_len<=32);
           
-          case TK_DEC_DIG|TK_REG|TK_HEX_DIG:
+          case TK_DEC_DIG:
+          case TK_REG:
+          case TK_HEX_DIG:
+          // the usage of case: !
             tokens[nr_token].type = rules[i].token_type;
             memcpy(tokens[nr_token++].str, substr_start, substr_len);
-            printf("%d", nr_token);
+            printf("%d\n", nr_token);
             break;
           case TK_NOTYPE:
             break;
