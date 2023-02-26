@@ -1,6 +1,6 @@
 #include <common.h>
 #define TEST_CMD_P_PATH "./tools/gen-expr/input2"
-#define CONFIG_DEBUG 1
+//#define CONFIG_DEBUG 1
 void init_monitor(int, char *[]);
 void am_init_monitor();
 void engine_start();

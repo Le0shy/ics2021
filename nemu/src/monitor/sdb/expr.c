@@ -5,18 +5,25 @@
  */
 #include <regex.h>
 #include <string.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <limits.h>
 enum {
   TK_NOTYPE = 256, 
-  TK_EQ,
   /* TODO: Add more token types */
-  TK_PLU,    //plus "+"
-  TK_MIN,    //minus "-"
-  TK_MUL,    //multiply "*"
-  TK_DIV,    //divide "/"
-  TK_LPR,    //left parenthesis "("
-  TK_RPR,    //right parenthesis ")"
-  //TK_DBL_QUO,//double quotation mark """
-  TK_DEC_DIG //decimal digits "[0-9]+"
+  TK_AND,     //and "&&"
+  TK_EQ,      //equal, "=="
+  TK_NEQ,     //not equal "!="
+  TK_PLU,     //plus "+"
+  TK_MIN,     //minus "-"
+  TK_MUL,     //multiply "*"
+  TK_DIV,     //divide "/"
+  TK_DEREF,   //dereference "*"
+  TK_LPR,     //left parenthesis "("
+  TK_RPR,     //right parenthesis ")"
+  TK_DEC_DIG, //decimal digits "[0-9]+"
+  TK_HEX_DIG, //hexadecimal digits "0x[0-9A-F]"
+  TK_REG,     //register name "$.."
 };
 
 static struct rule {
@@ -36,7 +43,9 @@ static struct rule {
   {"\\/", TK_DIV},       // divide
   {"\\(", TK_LPR},       // right parenthesis
   {"\\)", TK_RPR},       // left parenthesis
-  {"[0-9]+", TK_DEC_DIG}// decimal digits
+  {"(0$|[1-9][0-9]*)", TK_DEC_DIG}, // decimal digits
+  {"^\\$(0|ra|(s|g|t)p|t[0-3]|a[0-7]|s([0-9]|1[01]))$", TK_REG},       //  register sign
+  {"0x[0-9A-Fa-f]+", TK_HEX_DIG}    // hex digits
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -107,8 +116,9 @@ static bool make_token(char *e) {
         switch (rules[i].token_type) {
           //default: TODO();
             assert(substr_len<=32);
-          case TK_DEC_DIG:
-            tokens[nr_token].type = TK_DEC_DIG;
+          
+          case TK_DEC_DIG|TK_REG|TK_HEX_DIG:
+            tokens[nr_token].type = rules[i].token_type;
             memcpy(tokens[nr_token++].str, substr_start, substr_len);
             printf("%d", nr_token);
             break;
@@ -247,8 +257,27 @@ static word_t evaluate(int start_pos, int end_pos){
   /* op: position of main operator, 
      op_type: type of operator */
   int op, op_type;
+  char *endptr;
+  bool success = 0;
 
-  if (start_pos == end_pos) return str2word_t(tokens[start_pos].str);
+  if (start_pos == end_pos) {
+    if (tokens[start_pos].type == TK_DEC_DIG)
+    return str2word_t(tokens[start_pos].str);
+    else if (tokens[start_pos].type == TK_HEX_DIG){
+      errno = 0;
+      unsigned long val = strtoul(tokens[start_pos].str, &endptr, 16);
+      if ((errno == ERANGE && val == ULONG_MAX) || ( errno == 0 && val > (unsigned long)UINT_MAX)
+      || (errno !=0 && val ==0)) {
+        perror("strtoul");
+        exit(EXIT_FAILURE);
+      }
+      return (word_t)(val);
+    }
+
+    else if (tokens[start_pos].type == TK_REG)
+    return isa_reg_str2val (tokens[start_pos].str+1, &success);
+    else assert(0);
+  }
   else if (check_parenthesis(start_pos, end_pos) == true){
     return evaluate(start_pos + 1, end_pos - 1);
   }
