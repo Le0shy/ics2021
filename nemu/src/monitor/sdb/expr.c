@@ -51,7 +51,7 @@ static struct rule {
 #define NR_REGEX ARRLEN(rules)
 #define STACK_CAP 256
 #define TOKENS_SIZE 4096
-
+word_t vaddr_read(vaddr_t addr, int len);
 static regex_t re[NR_REGEX] = {};
 
 /* Rules are used for many times.
@@ -179,7 +179,10 @@ static int push(s_stack* stack, int val){
   return val;
 }
 
-static bool check_parenthesis(int start_pos, int end_pos){
+/* If expression is surrounded by a pair of parenthesis, return true, 
+otherwise return ture. If expression does not meet the standard of a legitimate expression
+then assign *check_expr false.*/
+static bool check_parenthesis(int start_pos, int end_pos, bool *check_expr){
   bool flag;
   // int substr_len = end_pos - start_pos + 1;
   s_stack stack= {
@@ -193,23 +196,27 @@ static bool check_parenthesis(int start_pos, int end_pos){
       flag = true; 
       break;
     case TK_RPR:
-      assert(0);
-      break;
+      *check_expr = false;
+      return false;
     default:
       flag = false;
   }
   for (int i = start_pos + 1; i <= end_pos; i += 1){
     if (tokens[i].type == TK_LPR){
       push(&stack, TK_LPR); 
-    } else {
-      if (tokens[i].type == TK_RPR){
-        assert(pop(&stack) != 0);
-        if (stack.size == 0 && i != end_pos){
+    } 
+    else if (tokens[i].type == TK_RPR){
+        if(stack.size == 0){
+          *check_expr = false;
+          return false;
+        }
+        else if(stack.size == 1 && i <end_pos){
           flag = false;
         }
+        pop(&stack);
       }
-    }
   }
+  if (stack.size == 0) *check_expr = true;
   return flag;
 }
 
@@ -254,15 +261,19 @@ static int main_operator_posi (int start_pos, int end_pos, int* op_type){
   return present_op;
 }
 
-static word_t evaluate(int start_pos, int end_pos){
-  assert (start_pos <= end_pos);
+static word_t evaluate(int start_pos, int end_pos, bool* check_expr){
+  if (start_pos > end_pos) {
+    *check_expr = false;
+    return 0;
+  }
 
   /* op: position of main operator, 
      op_type: type of operator */
   int op, op_type;
   char *endptr;
   bool success = 0;
-
+  
+  /* hex, decimal number and register token */
   if (start_pos == end_pos) {
     if (tokens[start_pos].type == TK_DEC_DIG)
     return str2word_t(tokens[start_pos].str);
@@ -279,21 +290,37 @@ static word_t evaluate(int start_pos, int end_pos){
 
     else if (tokens[start_pos].type == TK_REG)
     return isa_reg_str2val (tokens[start_pos].str+1, &success);
-    else assert(0);
+    /* No other possible type*/
+    else {
+      *check_expr = false;
+      return 0;
+    }
   }
-  else if (check_parenthesis(start_pos, end_pos) == true){
-    return evaluate(start_pos + 1, end_pos - 1);
+ 
+  else if (check_parenthesis(start_pos, end_pos, check_expr) == true){
+    return evaluate(start_pos + 1, end_pos - 1, check_expr);
   }
+  else if (*check_expr == false) return 0 ;
+
   else {
     op = main_operator_posi (start_pos, end_pos, &op_type);
-    word_t val1 = evaluate (start_pos, op-1);
-    word_t val2 = evaluate (op+1, end_pos);
+    /* If the main operator is dereference*/
+    if (op_type == TK_DEREF){
+      word_t val = evaluate(op+1, end_pos, check_expr);
+      if (val == 0 && *check_expr == false) return 0;
+      return vaddr_read(val, sizeof(word_t));
+    }
+    word_t val1 = evaluate (start_pos, op-1, check_expr);
+    if (val1 == 0 && *check_expr == false) return 0;
+    word_t val2 = evaluate (op+1, end_pos, check_expr);
+    if (val2 == 0 && *check_expr == false) return 0;
 
     switch(op_type){
       case TK_PLU: return val1 + val2;
       case TK_MIN: return val1 - val2;
       case TK_MUL: return val1 * val2;
       case TK_DIV: return val1 / val2;
+      //case TK_DEREF: return vaddr_read(val2, sizeof(word_t));
       default: assert(0);
     }
   }
@@ -303,7 +330,7 @@ word_t expr(char *e, bool *success) {
   clear_tokens();
   if (!make_token(e)) {
     *success = false;
-    printf("false to lexical analysis\n");
+    printf("false to lexical analysis:invalid character\n");
     return 0;
   }
   /* TODO: Insert codes to evaluate the expression. */
@@ -315,5 +342,13 @@ word_t expr(char *e, bool *success) {
   }
   printf("success\n");
   
-  return evaluate(0, nr_token - 1);
+  word_t result;
+  bool check_expr;
+  result = evaluate(0, nr_token - 1, &check_expr);
+  if (result == 0 && check_expr == false){
+    *success = false;
+    printf("invalid expression\n");
+    return 0;
+  }
+  return result;
 }
