@@ -44,7 +44,7 @@ static struct rule {
   {"\\(", TK_LPR},       // right parenthesis
   {"\\)", TK_RPR},       // left parenthesis
   {"(0$|[1-9][0-9]*)", TK_DEC_DIG}, // decimal digits
-  {"^\\$(0|ra|(s|g|t)p|t[0-3]|a[0-7]|s([0-9]|1[01]))$", TK_REG},       //  register sign
+  {"\\$(0|ra|(s|g|t)p|t[0-3]|a[0-7]|s([0-9]|1[01]))", TK_REG},       //  register sign
   {"0x[0-9A-Fa-f]+", TK_HEX_DIG}    // hex digits
 };
 
@@ -125,6 +125,7 @@ static bool make_token(char *e) {
             memcpy(tokens[nr_token++].str, substr_start, substr_len);
             printf("%d\n", nr_token);
             break;
+
           case TK_NOTYPE:
             break;
           default: 
@@ -220,6 +221,7 @@ static bool check_parenthesis(int start_pos, int end_pos, bool *check_expr){
   return flag;
 }
 
+/* Determine the main operator (has the lowest precedence level)*/
 static int main_operator_posi (int start_pos, int end_pos, int* op_type){
   int present_op_type = 0, present_op = 0;
   s_stack stack = {
@@ -320,6 +322,9 @@ static word_t evaluate(int start_pos, int end_pos, bool* check_expr){
       case TK_MIN: return val1 - val2;
       case TK_MUL: return val1 * val2;
       case TK_DIV: return val1 / val2;
+      case TK_AND: return val1 && val2;
+      case TK_EQ:  return val1 == val2;
+      case TK_NEQ: return val1 != val2;
       //case TK_DEREF: return vaddr_read(val2, sizeof(word_t));
       default: assert(0);
     }
@@ -343,7 +348,7 @@ word_t expr(char *e, bool *success) {
   printf("success\n");
   
   word_t result;
-  bool check_expr;
+  bool check_expr = success;
   result = evaluate(0, nr_token - 1, &check_expr);
   if (result == 0 && check_expr == false){
     *success = false;
