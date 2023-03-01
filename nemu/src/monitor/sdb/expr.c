@@ -37,7 +37,9 @@ static struct rule {
 
   {"( +|\")", TK_NOTYPE},    // spaces 
   {"\\+", TK_PLU},       // plus
+  {"\\&\\&", TK_AND},    // logical and
   {"==", TK_EQ},        // equal
+  {"!=", TK_NEQ},        // not equal
   {"\\-", TK_MIN},       // minus
   {"\\*", TK_MUL},       // multiply (dereference)
   {"\\/", TK_DIV},       // divide
@@ -251,11 +253,6 @@ static int main_operator_posi (int start_pos, int end_pos, int* op_type){
       } 
 
       else {
-        // if (present_op_type < TK_MUL && tokens[start_pos].type >= TK_MUL){
-        //   } else {
-        //     present_op = start_pos;
-        //     present_op_type = tokens[start_pos].type;
-        //   }
         switch(tokens[start_pos].type){
           case TK_AND:
           if (TK_AND <= present_op_type){
