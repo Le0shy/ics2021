@@ -125,7 +125,7 @@ static bool make_token(char *e) {
             memcpy(tokens[nr_token++].str, substr_start, substr_len);
             printf("%d\n", nr_token);
             break;
-
+          // skip spaces
           case TK_NOTYPE:
             break;
           default: 
@@ -221,7 +221,7 @@ static bool check_parenthesis(int start_pos, int end_pos, bool *check_expr){
   return flag;
 }
 
-/* Determine the main operator (has the lowest precedence level)*/
+/* Determine the main operator (has the lowest precedence level) */
 static int main_operator_posi (int start_pos, int end_pos, int* op_type){
   int present_op_type = 0, present_op = 0;
   s_stack stack = {
@@ -230,32 +230,67 @@ static int main_operator_posi (int start_pos, int end_pos, int* op_type){
   };
 
   while (start_pos <= end_pos){
+    /* Parenthesis has the highest precedence level */
     if (tokens[start_pos].type == TK_LPR){
       push(&stack, TK_LPR);
       for(start_pos +=1 ; stack.size != 0; start_pos +=1){
         if (tokens[start_pos].type == TK_LPR){
           push(&stack, TK_LPR);
-        } else {
-          if (tokens[start_pos].type == TK_RPR){
+        } 
+        else if (tokens[start_pos].type == TK_RPR){
             pop(&stack);
           }
-        }
       }
     }
+
     else if (tokens[start_pos].type < TK_LPR){
+      /* First operator as initial main operator */
       if (present_op_type == 0){
         present_op = start_pos;
         present_op_type = tokens[start_pos].type;
-      } else {
-          if (present_op_type < TK_MUL && tokens[start_pos].type >= TK_MUL){
+      } 
 
-          } else {
+      else {
+        // if (present_op_type < TK_MUL && tokens[start_pos].type >= TK_MUL){
+        //   } else {
+        //     present_op = start_pos;
+        //     present_op_type = tokens[start_pos].type;
+        //   }
+        switch(tokens[start_pos].type){
+          case TK_AND:
+          if (TK_AND <= present_op){
+            present_op = start_pos;
+            present_op_type = TK_AND;
+          }
+          break;
+          case TK_EQ:
+          case TK_NEQ:
+          if (TK_EQ <= present_op){
             present_op = start_pos;
             present_op_type = tokens[start_pos].type;
           }
+          break;
+          case TK_PLU:
+          case TK_MIN:
+          if (TK_PLU <= present_op){
+            present_op =start_pos;
+            present_op_type = tokens[start_pos].type;
+          } 
+          break;
+          case TK_MUL:
+          case TK_DIV:
+          if (TK_MUL <= present_op){
+            present_op =start_pos;
+            present_op_type = tokens[start_pos].type;
+          } 
+          break;
+          default:
+          assert(0);
+        }
         }
       start_pos += 1;
-    } else {
+    } 
+    else {
       start_pos += 1;
     }
   }
