@@ -258,28 +258,28 @@ static int main_operator_posi (int start_pos, int end_pos, int* op_type){
         //   }
         switch(tokens[start_pos].type){
           case TK_AND:
-          if (TK_AND <= present_op){
+          if (TK_AND <= present_op_type){
             present_op = start_pos;
             present_op_type = TK_AND;
           }
           break;
           case TK_EQ:
           case TK_NEQ:
-          if (TK_EQ <= present_op){
+          if (TK_EQ <= present_op_type){
             present_op = start_pos;
             present_op_type = tokens[start_pos].type;
           }
           break;
           case TK_PLU:
           case TK_MIN:
-          if (TK_PLU <= present_op){
+          if (TK_PLU <= present_op_type){
             present_op =start_pos;
             present_op_type = tokens[start_pos].type;
           } 
           break;
           case TK_MUL:
           case TK_DIV:
-          if (TK_MUL <= present_op){
+          if (TK_MUL <= present_op_type){
             present_op =start_pos;
             present_op_type = tokens[start_pos].type;
           } 
