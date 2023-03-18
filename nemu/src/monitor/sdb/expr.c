@@ -45,7 +45,7 @@ static struct rule {
   {"\\/", TK_DIV},       // divide
   {"\\(", TK_LPR},       // right parenthesis
   {"\\)", TK_RPR},       // left parenthesis
-  {"(0$|[1-9][0-9]*)", TK_DEC_DIG}, // decimal digits
+  {"(0|[1-9][0-9]*)", TK_DEC_DIG}, // decimal digits
   {"\\$(0|ra|(s|g|t)p|t[0-3]|a[0-7]|s([0-9]|1[01]))", TK_REG},       //  register sign
   {"0x[0-9A-Fa-f]+", TK_HEX_DIG}    // hex digits
 };

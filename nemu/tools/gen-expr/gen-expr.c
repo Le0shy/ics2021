@@ -36,7 +36,7 @@ static char* gen_rand_op(){
 }
 
 static char* gen_num (char *num_str){
-  snprintf(num_str, 5, "%uu", rand() % 2048);
+  snprintf(num_str, 6, "%uu", rand() % 2048);
   return num_str;
 }
 
