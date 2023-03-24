@@ -353,7 +353,12 @@ static word_t evaluate(int start_pos, int end_pos, bool* check_expr){
       case TK_PLU: return val1 + val2;
       case TK_MIN: return val1 - val2;
       case TK_MUL: return val1 * val2;
-      case TK_DIV: return val1 / val2;
+      case TK_DIV: 
+        if (val2 == 0){
+          printf("Division by zero exception <-");
+          *check_expr = false;
+          return 0;
+        }
       case TK_AND: return val1 && val2;
       case TK_EQ:  return val1 == val2;
       case TK_NEQ: return val1 != val2;
