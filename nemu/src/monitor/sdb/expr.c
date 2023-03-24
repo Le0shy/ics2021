@@ -45,9 +45,9 @@ static struct rule {
   {"\\/", TK_DIV},       // divide
   {"\\(", TK_LPR},       // right parenthesis
   {"\\)", TK_RPR},       // left parenthesis
-  {"(0|[1-9][0-9]*)", TK_DEC_DIG}, // decimal digits
-  {"\\$(0|ra|(s|g|t)p|t[0-3]|a[0-7]|s([0-9]|1[01]))", TK_REG},       //  register sign
-  {"0x[0-9A-Fa-f]+", TK_HEX_DIG}    // hex digits
+  {"0x[0-9A-Fa-f]+", TK_HEX_DIG},    // hex digits
+  {"\\$(0|pc|ra|(s|g|t)p|t[0-3]|a[0-7]|s([0-9]|1[01]))", TK_REG},       //  register sign
+  {"(0|[1-9][0-9]*)", TK_DEC_DIG} // decimal digits
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -125,7 +125,7 @@ static bool make_token(char *e) {
           // the usage of case: !
             tokens[nr_token].type = rules[i].token_type;
             memcpy(tokens[nr_token++].str, substr_start, substr_len);
-            printf("%d\n", nr_token);
+            IFNDEF(CONFIF_WATCHPOINT，printf("%d\n", nr_token));
             break;
           // skip spaces
           case TK_NOTYPE:
@@ -324,7 +324,7 @@ static word_t evaluate(int start_pos, int end_pos, bool* check_expr){
 
     else if (tokens[start_pos].type == TK_REG)
     return isa_reg_str2val (tokens[start_pos].str+1, &success);
-    /* No other possible type*/
+    /* No other possible types */
     else {
       *check_expr = false;
       return 0;
@@ -377,7 +377,7 @@ word_t expr(char *e, bool *success) {
       tokens[i].type = TK_DEREF;
     }
   }
-  printf("success\n");
+  IFNDEF(CONFIG_WATCHPOINT, printf("success\n"));
   
   word_t result;
   bool check_expr = success;
@@ -387,5 +387,6 @@ word_t expr(char *e, bool *success) {
     printf("invalid expression\n");
     return 0;
   }
+  *success = true;
   return result;
 }

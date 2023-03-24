@@ -14,7 +14,7 @@ void isa_reg_display() {
     //use a macro?
     printf(" %-3s  "FMT_WORD " \n",regs[i], cpu.gpr[i]._32);
   }
-  //printf("pc  %FMT_PADDR", cpu.pc);
+  printf(" pc   "FMT_WORD" \n", cpu.pc);
  }
 
 word_t isa_reg_str2val(const char *s, bool *success) {
@@ -24,6 +24,10 @@ word_t isa_reg_str2val(const char *s, bool *success) {
       printf(" %-3s  "FMT_WORD " \n",regs[i], cpu.gpr[i]._32);
       *success = 0;
       return cpu.gpr[i]._32 ;
+    } else if (strcmp("pc", s) == 0){
+      printf("   pc "FMT_WORD " \n", cpu.pc);
+      *success = 0;
+      return cpu.pc;
     }
   }
   *success = 1;

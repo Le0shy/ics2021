@@ -118,7 +118,12 @@ config CC_ASAN
 endmenu
 
 menu "Testing and Debugging"
-
+config WATCHPOINT
+  depends on !TARGET_AM
+  bool "Enable debug features inside NEMU"
+  default y
+  help
+    Enable debug features, watchpoint etc.
 
 config TRACE
   bool "Enable tracer"

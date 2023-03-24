@@ -50,6 +50,10 @@ static int print_mem (int words, vaddr_t address);
 
 static int cmd_p(char *args);
 
+static int cmd_w(char *args);
+
+static int cmd_d(char *args);
+
 static struct {
   const char *name;
   const char *description;
@@ -63,8 +67,9 @@ static struct {
   { "info", "Print status of registers and information about watchpoint", cmd_info},
   { "x", "scan mem at posi of EXPR, output subsequent N four-bytes in form of hex\
     command format:x N EXPR", cmd_x},
-  { "p", "evaluates the EXPR and prints out value, command format: p EXPR", cmd_p}
-
+  { "p", "Evaluates the EXPR and prints out value, command format: p EXPR", cmd_p},
+  { "w", "Creates a watchpoint, when value of EXPR is modified, prints out current value, command format: w EXPR", cmd_w},
+  { "d", "Delete a watchpoint, command format: d [watchpoint number] ", cmd_d}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
@@ -110,9 +115,9 @@ static int cmd_info(char *args){
   char *arg = strtok(NULL, " ");
   if ( arg==NULL || strcmp(arg, "r" )==0){
   isa_reg_display(); 
-  } else {
-    printf("invalid argument \n");
-  }
+  } else if (strcmp(arg, "w") == 0) {
+  info_watchpoints();
+  } else printf("invalid argument \n");
   return 0;
 }
 
@@ -158,7 +163,50 @@ int cmd_p(char *args){
   printf("%s\n", arg);
   bool success = true;
   word_t result = expr (arg, &success);
+  /* For debugging */
   printf("%u\n", result);
+  return 0;
+}
+
+int cmd_w(char *args){
+  char *arg = strtok(NULL, "");
+  if (arg == NULL){
+    printf("%s - %s\n", cmd_table[7].name, cmd_table[7].description);
+    return 0;
+  }
+  bool success;
+  if (strlen(arg) > 64) {
+    Log ("The expression is too long");
+  }
+  new_wp(arg, &success);
+  if (success == true) Log("Add watchpoint successfully");
+  else Log("Failed to add watchpoints");
+  return 0;
+}
+
+int cmd_d(char *args){
+  char *arg = strtok(NULL, "");
+  if (arg == NULL){
+    printf("%s - %s\n", cmd_table[8].name, cmd_table[8].description);
+    return 0;
+  }
+  for(int i = 0; i < strlen(arg); i += 1){
+    if (arg[i] < '0' || arg[i] > '9'){ 
+    Log ("Number of watchpoint n can only be positive decimal integer n < 32");
+    return 0;
+    }
+  }
+  
+  char* endptr;
+  unsigned seq = strtoul(arg, &endptr, 10);
+  if (seq >= 31){
+     Log ("Number of watchpoint n can only be positive decimal integer n < 32"); 
+     return 0;
+  }
+  bool success;
+  free_wp(seq, &success);
+  if (success == true) Log("Successfully delete watchpoints");
+  else Log("Failed to delete watchpoints");
   return 0;
 }
 
