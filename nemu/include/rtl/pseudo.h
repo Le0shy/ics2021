@@ -46,7 +46,8 @@ static inline def_rtl(sext, rtlreg_t *dest, const rtlreg_t *src1, int width)
   *dest = *src1;
   if (sign_bit != 0)
   {
-    word_t signext_count = sizeof(word_t) * 4 - width;
+    int signext_count = sizeof(word_t) * 8 - width;
+    Log(FMT_WORD, signext_count);
     for (int i = 0; i < signext_count; i = i+ 1)
     {
       sign_bit <<= 1;

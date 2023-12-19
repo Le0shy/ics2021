@@ -15,3 +15,9 @@ def_EHelper(jal){
   rtl_sext(s, s0, &id_src1->imm, 21);
   s->dnpc = s->pc + *s0;
 }
+
+def_EHelper(jalr){
+  rtl_addi(s, ddest, &s->snpc, 0);
+  rtl_addi(s, &s->dnpc, id_src1->preg, id_src2->simm);
+  s->dnpc &= 0xfffffffe;
+}
