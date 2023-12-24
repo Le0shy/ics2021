@@ -91,7 +91,7 @@ def_EHelper(and){
   rtl_and(s, ddest, id_src1->preg, id_src2->preg);
 }
 
-/*Jump*/
+/*Jump Control*/
 
 def_EHelper(jal){
   rtl_addi(s, ddest, &s->snpc, 0);
