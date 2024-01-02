@@ -12,6 +12,8 @@
 #define _CONCAT(x, y)       x ## y
 #define CONCAT(x, y)        _CONCAT(x, y)
 
+#define MACRO(c,f) c(f)
+
 #define putstr(s) \
   ({ for (const char *p = s; *p; p++) putch(*p); })
 
