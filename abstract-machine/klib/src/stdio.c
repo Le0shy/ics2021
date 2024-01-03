@@ -5,7 +5,7 @@
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 
-#define MAX_PRINT 1024
+#define MAX_PRINT 128
 // #define ALL_SPECIFIER(f) f(d) f(x) f(s) f(c) f(p)
 // #define def_SPECIFIER(name) CONCAT(spec_, name),
 // enum {
@@ -26,11 +26,21 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
 }
 
 int sprintf(char *out, const char *fmt, ...){
-  panic("Not implemented");
+  //panic("Not implemented");
+  va_list ap;
+  va_start(ap, fmt);
+  int len = vsnprintf(out, 128, fmt, ap);
+  va_end(ap);
+  return len;
 }
 
 int snprintf(char *out, size_t n, const char *fmt, ...) {
-  panic("Not implemented");
+  //panic("Not implemented");
+  va_list ap;
+  va_start(ap, fmt);
+  int len = vsnprintf(out, n, fmt, ap);
+  va_end(ap);
+  return len;
 }
 
 static int itoa (char* res, int num) {
@@ -56,7 +66,7 @@ static int itoa (char* res, int num) {
 
 int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
   //panic("Not implemented");
-  if(n > 1024) {
+  if(n > MAX_PRINT) {
     panic("not implemented: invalid input for vsnprintf");
   }
   size_t iter = 0;
@@ -89,8 +99,9 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
     }
     iter += 1;
   }
+  buf[buf_size] = 0;
+  strcpy(out, buf);
   return buf_size;
-
 }
 
 #endif
