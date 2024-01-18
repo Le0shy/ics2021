@@ -12,7 +12,6 @@
  * You can modify this value as you want.
  */
 #define MAX_INSTR_TO_PRINT 10
-
 CPU_state cpu = {};
 uint64_t g_nr_guest_instr = 0;
 static uint64_t g_timer = 0; // unit: us
@@ -20,6 +19,35 @@ static bool g_print_step = false;
 const rtlreg_t rzero = 0;
 rtlreg_t tmp_reg[4];
 
+/* itrace related variable */
+
+#ifdef CONFIG_ITRACE
+#define IRINGBUF_SIZE 16
+char iringbuf[IRINGBUF_SIZE][128];
+static int append_rank = 0;
+
+static int get_rank(){ 
+  append_rank = append_rank == 16 ? 0 : append_rank;
+  return append_rank;
+}
+
+static void iringbuf_write(Decode *_this){
+  strncpy(iringbuf[get_rank()], _this->logbuf, 128);
+  append_rank += 1;
+}
+
+static void iringbuf_read(){
+  for(int i = 0 ; i < 16 && iringbuf[i][0] != 0; i += 1){
+    if(append_rank == i){
+      Log("--> %s\n", iringbuf[i]);
+    }
+    else{
+      Log("    %s\n", iringbuf[i]);
+    }
+  }
+}
+
+#endif
 void device_update();
 void fetch_decode(Decode *s, vaddr_t pc);
 
@@ -31,9 +59,14 @@ void check_and_display(){
   return;
 }
 
+/* use _this->logbuf to record any traces */
+/* the condition to output trace can be customized here */
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
-  if (ITRACE_COND) log_write("%s\n", _this->logbuf);
+  if (ITRACE_COND) {
+    log_write("%s\n", _this->logbuf);
+    iringbuf_write(_this);
+  }
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
@@ -85,6 +118,7 @@ void fetch_decode(Decode *s, vaddr_t pc) {
   int ilen_max = MUXDEF(CONFIG_ISA_x86, 8, 4);
   int space_len = ilen_max - ilen;
   if (space_len < 0) space_len = 0;
+  /* In riscv-32 space_len = 1 */
   space_len = space_len * 3 + 1;
   memset(p, ' ', space_len);
   p += space_len;
@@ -92,11 +126,14 @@ void fetch_decode(Decode *s, vaddr_t pc) {
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.instr.val, ilen);
+
+  
 #endif
 }
 
 /* Simulate how the CPU works. */
 void cpu_exec(uint64_t n) {
+  /* only print specific intruction when n < MAX_INSTR_TO_PRINT */
   g_print_step = (n < MAX_INSTR_TO_PRINT);
   switch (nemu_state.state) {
     case NEMU_END: case NEMU_ABORT:
@@ -120,9 +157,13 @@ void cpu_exec(uint64_t n) {
   g_timer += timer_end - timer_start;
 
   switch (nemu_state.state) {
+    /*does this line of code not even happen at all?*/
+    /*when HIT BAD TRAP may happen?*/
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 
-    case NEMU_END: case NEMU_ABORT:
+    /*no break between*/
+    case NEMU_ABORT: iringbuf_read();
+    case NEMU_END:
       Log("nemu: %s at pc = " FMT_WORD,
           (nemu_state.state == NEMU_ABORT ? ASNI_FMT("ABORT", ASNI_FG_RED) :
            (nemu_state.halt_ret == 0 ? ASNI_FMT("HIT GOOD TRAP", ASNI_FG_GREEN) :
